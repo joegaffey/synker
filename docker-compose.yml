@@ -1,0 +1,20 @@
+services:
+  synker:
+    build: .
+    container_name: synker
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:3001/api/auth/callback}
+      - SYNC_INTERVAL=${SYNC_INTERVAL:-5}
+      - CALENDAR_IDS=${CALENDAR_IDS:-primary}
+      - PORT=3001
+    labels:
+      icon: https://raw.githubusercontent.com/IceWhaleTech/CasaOS-AppStore/main/Apps/Synker/icon.png
+      web: http://[ip]:[port:3001]
+      name: "Synker"
+      description: "Family calendar and task hub synced with Google"
+      category: "Productivity"

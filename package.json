@@ -1,0 +1,26 @@
+{
+  "name": "synker",
+  "version": "1.0.0",
+  "description": "Shared family calendar and task list powered by Google Calendar & Tasks",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "node --watch server/index.js",
+    "dev:client": "vite",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "lit": "3.1.2",
+    "@lit/task": "1.0.1",
+    "express": "4.18.2",
+    "googleapis": "131.0.0",
+    "dotenv": "16.4.1",
+    "node-cron": "3.0.3"
+  },
+  "devDependencies": {
+    "vite": "5.0.12",
+    "concurrently": "8.2.2"
+  }
+}
