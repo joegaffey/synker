@@ -16,14 +16,82 @@ calendarRouter.get('/events', (req, res) => {
   });
 });
 
+// Fetch events for a specific month (on-demand, not cached)
+calendarRouter.get('/events/month/:year/:month', async (req, res) => {
+  if (!store.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const year = parseInt(req.params.year);
+  const month = parseInt(req.params.month); // 0-indexed
+
+  if (isNaN(year) || isNaN(month) || month < 0 || month > 11) {
+    return res.status(400).json({ error: 'Invalid year or month' });
+  }
+
+  try {
+    const auth = getAuthenticatedClient();
+    const calendar = google.calendar({ version: 'v3', auth });
+    const calendarIds = (process.env.CALENDAR_IDS || 'primary').split(',').map(id => id.trim());
+
+    const timeMin = new Date(year, month, 1).toISOString();
+    const timeMax = new Date(year, month + 1, 1).toISOString();
+
+    const allEvents = [];
+
+    for (const calendarId of calendarIds) {
+      try {
+        const result = await calendar.events.list({
+          calendarId,
+          timeMin,
+          timeMax,
+          singleEvents: true,
+          orderBy: 'startTime',
+          maxResults: 100,
+        });
+
+        const events = (result.data.items || []).map(event => ({
+          id: event.id,
+          calendarId,
+          title: event.summary || '(No title)',
+          description: event.description || '',
+          start: event.start?.dateTime || event.start?.date,
+          end: event.end?.dateTime || event.end?.date,
+          allDay: !event.start?.dateTime,
+          location: event.location || '',
+          color: event.colorId || null,
+          attendees: (event.attendees || []).map(a => ({
+            name: a.displayName || a.email,
+            email: a.email,
+            response: a.responseStatus,
+          })),
+        }));
+
+        allEvents.push(...events);
+      } catch (err) {
+        console.error(`[Month] Failed to fetch calendar ${calendarId}:`, err.message);
+      }
+    }
+
+    res.json({ events: allEvents });
+  } catch (err) {
+    console.error('Failed to fetch month events:', err.message);
+    res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
 calendarRouter.get('/events/today', (req, res) => {
   if (!store.isAuthenticated()) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const todayEvents = store.events.filter(event => {
-    const eventDate = event.start?.split('T')[0] || event.start;
+    if (!event.start) return false;
+    if (!event.start.includes('T')) return event.start === today;
+    const d = new Date(event.start);
+    const eventDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     return eventDate === today;
   });
 

@@ -5,6 +5,8 @@ class SynkerCalendar extends LitElement {
     events: { type: Array },
     loading: { type: Boolean },
     selectedDate: { type: String },
+    viewYear: { type: Number },
+    viewMonth: { type: Number },
     showCreateForm: { type: Boolean },
     newEventTitle: { type: String },
     newEventLocation: { type: String },
@@ -24,12 +26,42 @@ class SynkerCalendar extends LitElement {
       display: block;
     }
 
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .month-nav-btn {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: #6c63ff;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .month-nav-btn:active {
+      transform: scale(0.9);
+      background: #f0eeff;
+    }
+
     .month-label {
       font-family: 'Fredoka', sans-serif;
       font-size: 20px;
       font-weight: 600;
       color: #4a3f6b;
-      margin-bottom: 12px;
       text-align: center;
     }
 
@@ -441,11 +473,15 @@ class SynkerCalendar extends LitElement {
     super();
     this.events = [];
     this.loading = true;
-    this.selectedDate = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    this.selectedDate = todayStr;
+    this.viewYear = now.getFullYear();
+    this.viewMonth = now.getMonth();
     this.showCreateForm = false;
     this.newEventTitle = '';
     this.newEventLocation = '';
-    this.newEventDate = new Date().toISOString().split('T')[0];
+    this.newEventDate = todayStr;
     this.newEventStartTime = '09:00';
     this.newEventEndTime = '10:00';
     this.newEventAllDay = false;
@@ -484,15 +520,16 @@ class SynkerCalendar extends LitElement {
 
   _getMonthDates() {
     const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
+    const year = this.viewYear;
+    const month = this.viewMonth;
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const dates = [];
 
     for (let day = 1; day <= daysInMonth; day++) {
       const d = new Date(year, month, day);
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       dates.push({
-        date: d.toISOString().split('T')[0],
+        date: dateStr,
         day: d.toLocaleDateString('en', { weekday: 'short' }),
         num: day,
         isToday: d.toDateString() === today.toDateString(),
@@ -501,10 +538,19 @@ class SynkerCalendar extends LitElement {
     return dates;
   }
 
+  _getLocalDate(dateStr) {
+    if (!dateStr) return '';
+    // All-day events are just YYYY-MM-DD, no conversion needed
+    if (!dateStr.includes('T')) return dateStr;
+    // Timed events: parse and extract local date
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   _getDatesWithEvents() {
     const set = new Set();
     for (const event of this.events) {
-      const date = (event.start || '').split('T')[0];
+      const date = this._getLocalDate(event.start);
       if (date) set.add(date);
     }
     return set;
@@ -512,16 +558,17 @@ class SynkerCalendar extends LitElement {
 
   _getSelectedDayEvents() {
     return this.events.filter(event => {
-      const eventDate = (event.start || '').split('T')[0];
+      const eventDate = this._getLocalDate(event.start);
       return eventDate === this.selectedDate;
     });
   }
 
   _getUpcomingEvents() {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     return this.events
       .filter(event => {
-        const eventDate = (event.start || '').split('T')[0];
+        const eventDate = this._getLocalDate(event.start);
         return eventDate >= today;
       })
       .sort((a, b) => (a.start || '').localeCompare(b.start || ''))
@@ -552,6 +599,47 @@ class SynkerCalendar extends LitElement {
   _selectDate(date) {
     this.selectedDate = date;
     this.newEventDate = date;
+  }
+
+  _prevMonth() {
+    if (this.viewMonth === 0) {
+      this.viewMonth = 11;
+      this.viewYear--;
+    } else {
+      this.viewMonth--;
+    }
+    this._scrolled = false;
+    this._fetchMonthEvents();
+  }
+
+  _nextMonth() {
+    if (this.viewMonth === 11) {
+      this.viewMonth = 0;
+      this.viewYear++;
+    } else {
+      this.viewMonth++;
+    }
+    this._scrolled = false;
+    this._fetchMonthEvents();
+  }
+
+  async _fetchMonthEvents() {
+    const now = new Date();
+    // If navigating back to current month, use the cached sync data
+    if (this.viewYear === now.getFullYear() && this.viewMonth === now.getMonth()) {
+      this._fetchEvents();
+      return;
+    }
+    this.loading = true;
+    try {
+      const res = await fetch(`/api/calendar/events/month/${this.viewYear}/${this.viewMonth}`);
+      const data = await res.json();
+      this.events = data.events || [];
+    } catch (err) {
+      console.error('Failed to fetch month events:', err);
+    } finally {
+      this.loading = false;
+    }
   }
 
   _calendarLabel(id) {
@@ -638,11 +726,14 @@ class SynkerCalendar extends LitElement {
     const datesWithEvents = this._getDatesWithEvents();
     const selectedDayEvents = this._getSelectedDayEvents();
     const upcomingEvents = this._getUpcomingEvents();
-    const today = new Date();
-    const monthLabel = today.toLocaleDateString('en', { month: 'long', year: 'numeric' });
+    const monthLabel = new Date(this.viewYear, this.viewMonth).toLocaleDateString('en', { month: 'long', year: 'numeric' });
 
     return html`
-      <div class="month-label">${monthLabel}</div>
+      <div class="month-nav">
+        <button class="month-nav-btn" @click=${this._prevMonth} aria-label="Previous month">‹</button>
+        <span class="month-label">${monthLabel}</span>
+        <button class="month-nav-btn" @click=${this._nextMonth} aria-label="Next month">›</button>
+      </div>
 
       <div class="date-strip" role="listbox" aria-label="Date selection">
         ${dates.map(d => html`

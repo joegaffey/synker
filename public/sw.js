@@ -1,4 +1,4 @@
-const CACHE_NAME = 'synker-v2';
+const CACHE_NAME = `synker-${'__BUILD_HASH__'}`;
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',

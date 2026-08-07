@@ -1,4 +1,6 @@
 import { defineConfig } from 'vite';
+import { readFileSync, writeFileSync } from 'fs';
+import { resolve } from 'path';
 
 export default defineConfig({
   root: '.',
@@ -7,6 +9,17 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
   },
+  plugins: [
+    {
+      name: 'sw-build-hash',
+      closeBundle() {
+        const swPath = resolve('dist', 'sw.js');
+        const content = readFileSync(swPath, 'utf-8');
+        const hash = Date.now().toString(36);
+        writeFileSync(swPath, content.replace('__BUILD_HASH__', hash));
+      },
+    },
+  ],
   server: {
     port: 3000,
     proxy: {
