@@ -522,6 +522,9 @@ class SynkerCalendar extends LitElement {
         }
       }
       this.calendars = Array.from(calSet.keys());
+      if (this.calendars.length > 0 && !this.calendars.includes(this.newEventCalendar)) {
+        this.newEventCalendar = this.calendars[0];
+      }
     } catch (err) {
       console.error('Failed to fetch events:', err);
     } finally {

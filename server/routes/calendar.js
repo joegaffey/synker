@@ -113,7 +113,7 @@ calendarRouter.post('/events', async (req, res) => {
     const auth = getAuthenticatedClient();
     const calendar = google.calendar({ version: 'v3', auth });
 
-    const targetCalendar = calendarId || 'primary';
+    const targetCalendar = calendarId || (process.env.CALENDAR_IDS || 'primary').split(',')[0].trim();
 
     let event;
     if (allDay) {
