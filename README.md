@@ -4,8 +4,8 @@ A cheerful family calendar and task list PWA that syncs with Google Calendar and
 
 ## Features
 
-- 📆 **Google Calendar** sync — view upcoming events in a beautiful card layout
-- ✅ **Google Tasks** sync — browse all your task lists with due dates and status
+- 📆 **Google Calendar** sync — view, create, edit, and delete events in a beautiful card layout
+- ✅ **Google Tasks** sync — browse, add, edit, and complete tasks across your task lists
 - 🔄 **Auto-sync** — configurable periodic refresh (default: every 5 minutes)
 - 👆 **Touch-first UX** — large touch targets, smooth animations, kiosk-friendly
 - 📱 **PWA** — installable, works offline with cached data
@@ -32,6 +32,17 @@ npm run dev
 
 Open http://localhost:3000 and click "Connect Google" to authenticate.
 
+### Development without Google
+
+A dev-only mock server fakes the Google integration with in-memory sample data, so you can test the UI (create/edit/delete/toggle) with no credentials:
+
+```bash
+npm run dev:mock        # serves the mock API on :3001
+npm run dev:client      # in another terminal, vite on :3000 proxies /api to it
+```
+
+Or build and run it fully standalone: `npm run build && npm run dev:mock` → http://localhost:3001
+
 ### Production (Docker)
 
 ```bash
@@ -42,6 +53,18 @@ docker compose up -d
 ```
 
 The app will be available at http://your-host:3001
+
+> **Note:** Google tokens are kept in memory only. Restarting the server or container clears authentication — click **Connect Google** once after each restart to re-authenticate.
+
+### Accessing from another device (SSH tunnel)
+
+If you browse to the app from another machine but keep the OAuth redirect URI set to `http://localhost:3001`, open an SSH tunnel so `localhost:3001` on your machine reaches the server:
+
+```bash
+ssh -L 3001:localhost:3001 user@your-host
+```
+
+Then open http://localhost:3001 and authenticate. (Any browser on the tunneled machine will work; the kiosk device that displays the app still needs to reach the server over the LAN.)
 
 ### CasaOS
 
@@ -68,6 +91,7 @@ The app will be available at http://your-host:3001
 synker/
 ├── server/           # Express.js API server
 │   ├── index.js      # Entry point, cron, static serving
+│   ├── mock.js       # Dev-only mock server (no Google needed)
 │   ├── routes/       # API route handlers
 │   └── services/     # Google API sync, auth, in-memory store
 ├── src/              # Lit web components (frontend)
