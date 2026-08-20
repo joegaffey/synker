@@ -59,6 +59,7 @@ The app will be available at http://your-host:3001
 | `GOOGLE_REDIRECT_URI` | OAuth2 redirect URI | `http://localhost:3001/api/auth/callback` |
 | `SYNC_INTERVAL` | Minutes between auto-syncs | `5` |
 | `CALENDAR_IDS` | Comma-separated calendar IDs | `primary` |
+| `TASK_LIST_IDS` | Comma-separated Google Task list IDs to sync (empty = all) | *(all)* |
 | `PORT` | Server port | `3001` |
 
 ## Architecture

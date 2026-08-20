@@ -58,10 +58,14 @@ export async function syncTasks() {
 
   // Get task lists
   const listRes = await tasks.tasklists.list({ maxResults: 20 });
-  const taskLists = (listRes.data.items || []).map(list => ({
+  const allTaskLists = (listRes.data.items || []).map(list => ({
     id: list.id,
     title: list.title,
   }));
+  const configuredIds = (process.env.TASK_LIST_IDS || '').split(',').map(id => id.trim()).filter(Boolean);
+  const taskLists = configuredIds.length > 0
+    ? allTaskLists.filter(list => configuredIds.includes(list.id))
+    : allTaskLists;
   store.setTaskLists(taskLists);
 
   const allTasks = [];

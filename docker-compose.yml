@@ -11,6 +11,7 @@ services:
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:3001/api/auth/callback}
       - SYNC_INTERVAL=${SYNC_INTERVAL:-5}
       - CALENDAR_IDS=${CALENDAR_IDS:-primary}
+      - TASK_LIST_IDS=${TASK_LIST_IDS:-}
       - PORT=3001
     labels:
       icon: https://raw.githubusercontent.com/IceWhaleTech/CasaOS-AppStore/main/Apps/Synker/icon.png
