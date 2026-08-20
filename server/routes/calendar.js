@@ -149,6 +149,54 @@ calendarRouter.post('/events', async (req, res) => {
   }
 });
 
+// Update an event
+calendarRouter.patch('/events/:eventId', async (req, res) => {
+  if (!store.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const { eventId } = req.params;
+  const { title, description, start, end, allDay, calendarId, location } = req.body;
+
+  if (!calendarId) {
+    return res.status(400).json({ error: 'calendarId is required' });
+  }
+
+  try {
+    const auth = getAuthenticatedClient();
+    const calendar = google.calendar({ version: 'v3', auth });
+
+    const event = {};
+    if (title !== undefined) event.summary = title;
+    if (description !== undefined) event.description = description || undefined;
+    if (location !== undefined) event.location = location || undefined;
+
+    if (start) {
+      if (allDay) {
+        event.start = { date: start };
+        event.end = { date: end || start };
+      } else {
+        event.start = { dateTime: start, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+        event.end = { dateTime: end || new Date(new Date(start).getTime() + 3600000).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+      }
+    }
+
+    const result = await calendar.events.patch({
+      calendarId,
+      eventId,
+      requestBody: event,
+    });
+
+    // Re-sync to update local store
+    await syncCalendar();
+
+    res.json({ success: true, event: result.data });
+  } catch (err) {
+    console.error('Failed to update event:', err.message);
+    res.status(500).json({ error: 'Failed to update event', message: err.message });
+  }
+});
+
 // Delete an event
 calendarRouter.delete('/events/:eventId', async (req, res) => {
   if (!store.isAuthenticated()) {

@@ -18,6 +18,7 @@ class SynkerCalendar extends LitElement {
     creating: { type: Boolean },
     deletingId: { type: String },
     confirmDeleteId: { type: String },
+    editingEvent: { type: Object },
     calendars: { type: Array },
   };
 
@@ -361,16 +362,19 @@ class SynkerCalendar extends LitElement {
       margin-top: 2px;
     }
 
-    .event-delete-btn {
+    .event-actions {
       position: absolute;
       top: 10px;
       right: 10px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .event-action-btn {
       width: 28px;
       height: 28px;
       border: none;
       border-radius: 50%;
-      background: #fee;
-      color: #ff4444;
       font-size: 14px;
       cursor: pointer;
       display: flex;
@@ -380,7 +384,17 @@ class SynkerCalendar extends LitElement {
       transition: all 0.2s ease;
     }
 
-    .event-delete-btn:active {
+    .event-action-btn.delete {
+      background: #fee;
+      color: #ff4444;
+    }
+
+    .event-action-btn.edit {
+      background: #eef;
+      color: #6c63ff;
+    }
+
+    .event-action-btn:active {
       transform: scale(0.9);
       opacity: 1;
     }
@@ -489,6 +503,7 @@ class SynkerCalendar extends LitElement {
     this.creating = false;
     this.deletingId = null;
     this.confirmDeleteId = null;
+    this.editingEvent = null;
     this.calendars = [];
     this._fetchEvents();
   }
@@ -649,7 +664,32 @@ class SynkerCalendar extends LitElement {
     return id.split('@')[0].slice(0, 12) + '...';
   }
 
-  async _handleCreate(e) {
+  _startEdit(event) {
+    this.editingEvent = event;
+    this.newEventTitle = event.title;
+    this.newEventLocation = event.location || '';
+    this.newEventCalendar = event.calendarId || 'primary';
+    this.newEventDate = this._getLocalDate(event.start);
+    this.newEventAllDay = event.allDay;
+    const start = event.start;
+    const end = event.end;
+    if (start && start.includes('T')) {
+      const sd = new Date(start);
+      this.newEventStartTime = `${String(sd.getHours()).padStart(2, '0')}:${String(sd.getMinutes()).padStart(2, '0')}`;
+    }
+    if (end && end.includes('T')) {
+      const ed = new Date(end);
+      this.newEventEndTime = `${String(ed.getHours()).padStart(2, '0')}:${String(ed.getMinutes()).padStart(2, '0')}`;
+    }
+    this.showCreateForm = true;
+  }
+
+  _closeForm() {
+    this.showCreateForm = false;
+    this.editingEvent = null;
+  }
+
+  async _handleSubmit(e) {
     e.preventDefault();
     if (!this.newEventTitle.trim()) return;
 
@@ -673,8 +713,14 @@ class SynkerCalendar extends LitElement {
         body.end = `${this.newEventDate}T${this.newEventEndTime}:00`;
       }
 
-      const res = await fetch('/api/calendar/events', {
-        method: 'POST',
+      const isEditing = !!this.editingEvent;
+      const url = isEditing
+        ? `/api/calendar/events/${encodeURIComponent(this.editingEvent.id)}`
+        : '/api/calendar/events';
+      const method = isEditing ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -684,10 +730,11 @@ class SynkerCalendar extends LitElement {
         this.newEventLocation = '';
         this.newEventAllDay = false;
         this.showCreateForm = false;
+        this.editingEvent = null;
         await this._fetchEvents();
       }
     } catch (err) {
-      console.error('Failed to create event:', err);
+      console.error('Failed to save event:', err);
     } finally {
       this.creating = false;
     }
@@ -787,7 +834,7 @@ class SynkerCalendar extends LitElement {
     const calendarIds = this.calendars.length > 0 ? this.calendars : ['primary'];
 
     return html`
-      <form class="create-form" @submit=${this._handleCreate}>
+      <form class="create-form" @submit=${this._handleSubmit}>
         <div class="form-field">
           <label for="event-title">What's happening?</label>
           <input
@@ -870,13 +917,15 @@ class SynkerCalendar extends LitElement {
           <button
             type="button"
             class="form-btn cancel"
-            @click=${() => { this.showCreateForm = false; }}
+            @click=${this._closeForm}
           >Cancel</button>
           <button
             type="submit"
             class="form-btn submit"
             ?disabled=${!this.newEventTitle.trim() || this.creating}
-          >${this.creating ? 'Creating...' : 'Add Event 🎉'}</button>
+          >${this.creating
+            ? (this.editingEvent ? 'Saving...' : 'Creating...')
+            : (this.editingEvent ? 'Save Changes 💾' : 'Add Event 🎉')}</button>
         </div>
       </form>
     `;
@@ -899,11 +948,18 @@ class SynkerCalendar extends LitElement {
           ${event.location ? html`<div class="event-meta">📍 ${event.location}</div>` : ''}
           ${dateLabel ? html`<div class="event-date-label">📅 ${dateLabel}</div>` : ''}
         </div>
-        <button
-          class="event-delete-btn"
-          @click=${() => { this.confirmDeleteId = event.id; }}
-          aria-label="Delete event ${event.title}"
-        >🗑️</button>
+        <div class="event-actions">
+          <button
+            class="event-action-btn edit"
+            @click=${() => this._startEdit(event)}
+            aria-label="Edit event ${event.title}"
+          >✏️</button>
+          <button
+            class="event-action-btn delete"
+            @click=${() => { this.confirmDeleteId = event.id; }}
+            aria-label="Delete event ${event.title}"
+          >🗑️</button>
+        </div>
 
         ${isConfirming ? html`
           <div class="confirm-delete">

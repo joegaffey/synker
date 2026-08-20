@@ -70,6 +70,44 @@ tasksRouter.post('/', async (req, res) => {
   }
 });
 
+// Update a task
+tasksRouter.patch('/:taskId', async (req, res) => {
+  if (!store.isAuthenticated()) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+
+  const { taskId } = req.params;
+  const { title, notes, due, listId } = req.body;
+
+  if (!listId) {
+    return res.status(400).json({ error: 'listId is required' });
+  }
+
+  try {
+    const auth = getAuthenticatedClient();
+    const tasks = google.tasks({ version: 'v1', auth });
+
+    const taskBody = {};
+    if (title !== undefined) taskBody.title = title;
+    if (notes !== undefined) taskBody.notes = notes || '';
+    if (due !== undefined) taskBody.due = due || null;
+
+    const result = await tasks.tasks.patch({
+      tasklist: listId,
+      task: taskId,
+      requestBody: taskBody,
+    });
+
+    // Re-sync tasks to update local store
+    await syncTasks();
+
+    res.json({ success: true, task: result.data });
+  } catch (err) {
+    console.error('Failed to update task:', err.message);
+    res.status(500).json({ error: 'Failed to update task', message: err.message });
+  }
+});
+
 // Toggle task completion
 tasksRouter.patch('/:taskId/toggle', async (req, res) => {
   if (!store.isAuthenticated()) {

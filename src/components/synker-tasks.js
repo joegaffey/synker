@@ -12,6 +12,7 @@ class SynkerTasks extends LitElement {
     newTaskNotes: { type: String },
     newTaskDue: { type: String },
     creating: { type: Boolean },
+    editingTask: { type: Object },
     togglingIds: { type: Object },
   };
 
@@ -294,6 +295,29 @@ class SynkerTasks extends LitElement {
       overflow: hidden;
     }
 
+    .task-edit-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 50%;
+      background: #eef;
+      color: #6c63ff;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.6;
+      flex-shrink: 0;
+      margin-top: 1px;
+      transition: all 0.2s ease;
+    }
+
+    .task-edit-btn:active {
+      transform: scale(0.9);
+      opacity: 1;
+    }
+
     .empty-state {
       display: flex;
       flex-direction: column;
@@ -360,6 +384,7 @@ class SynkerTasks extends LitElement {
     this.newTaskNotes = '';
     this.newTaskDue = '';
     this.creating = false;
+    this.editingTask = null;
     this.togglingIds = new Set();
     this._fetchData();
   }
@@ -407,15 +432,36 @@ class SynkerTasks extends LitElement {
     return `📅 ${due.toLocaleDateString('en', { month: 'short', day: 'numeric' })}`;
   }
 
-  async _handleCreate(e) {
+  _toDateInputValue(isoStr) {
+    if (!isoStr) return '';
+    const d = new Date(isoStr);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  _startEdit(task) {
+    this.editingTask = task;
+    this.newTaskTitle = task.title;
+    this.newTaskNotes = task.notes || '';
+    this.newTaskDue = this._toDateInputValue(task.due);
+    this.showCreateForm = true;
+  }
+
+  _closeForm() {
+    this.showCreateForm = false;
+    this.editingTask = null;
+  }
+
+  async _handleSubmit(e) {
     e.preventDefault();
     if (!this.newTaskTitle.trim()) return;
 
     this.creating = true;
     try {
-      const listId = this.selectedList !== 'all'
-        ? this.selectedList
-        : (this.taskLists[0]?.id || '@default');
+      const listId = this.editingTask
+        ? this.editingTask.listId
+        : (this.selectedList !== 'all'
+          ? this.selectedList
+          : (this.taskLists[0]?.id || '@default'));
 
       const body = {
         title: this.newTaskTitle.trim(),
@@ -424,8 +470,14 @@ class SynkerTasks extends LitElement {
       if (this.newTaskNotes.trim()) body.notes = this.newTaskNotes.trim();
       if (this.newTaskDue) body.due = new Date(this.newTaskDue).toISOString();
 
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
+      const isEditing = !!this.editingTask;
+      const url = isEditing
+        ? `/api/tasks/${encodeURIComponent(this.editingTask.id)}`
+        : '/api/tasks';
+      const method = isEditing ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
@@ -435,10 +487,11 @@ class SynkerTasks extends LitElement {
         this.newTaskNotes = '';
         this.newTaskDue = '';
         this.showCreateForm = false;
+        this.editingTask = null;
         await this._fetchData();
       }
     } catch (err) {
-      console.error('Failed to create task:', err);
+      console.error('Failed to save task:', err);
     } finally {
       this.creating = false;
     }
@@ -503,7 +556,7 @@ class SynkerTasks extends LitElement {
       </div>
 
       ${this.showCreateForm ? html`
-        <form class="create-form" @submit=${this._handleCreate}>
+        <form class="create-form" @submit=${this._handleSubmit}>
           <div class="form-field">
             <label for="task-title">What needs doing?</label>
             <input
@@ -537,13 +590,15 @@ class SynkerTasks extends LitElement {
             <button
               type="button"
               class="form-btn cancel"
-              @click=${() => { this.showCreateForm = false; }}
+              @click=${this._closeForm}
             >Cancel</button>
             <button
               type="submit"
               class="form-btn submit"
               ?disabled=${!this.newTaskTitle.trim() || this.creating}
-            >${this.creating ? 'Adding...' : 'Add Task ✨'}</button>
+            >${this.creating
+              ? (this.editingTask ? 'Saving...' : 'Adding...')
+              : (this.editingTask ? 'Save Changes 💾' : 'Add Task ✨')}</button>
           </div>
         </form>
       ` : html`
@@ -607,6 +662,11 @@ class SynkerTasks extends LitElement {
           </div>
           ${task.notes ? html`<div class="task-notes">${task.notes}</div>` : ''}
         </div>
+        <button
+          class="task-edit-btn"
+          @click=${() => this._startEdit(task)}
+          aria-label="Edit task ${task.title}"
+        >✏️</button>
       </div>
     `;
   }
