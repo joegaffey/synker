@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit';
+import { api } from '../api.js';
 
 class SynkerTasks extends LitElement {
   static properties = {
@@ -394,8 +395,8 @@ class SynkerTasks extends LitElement {
     this.loading = true;
     try {
       const [listsRes, tasksRes] = await Promise.all([
-        fetch('/api/tasks/lists'),
-        fetch('/api/tasks'),
+        api('/tasks/lists'),
+        api('/tasks'),
       ]);
       const listsData = await listsRes.json();
       const tasksData = await tasksRes.json();
@@ -471,11 +472,11 @@ class SynkerTasks extends LitElement {
 
       const isEditing = !!this.editingTask;
       const url = isEditing
-        ? `/api/tasks/${encodeURIComponent(this.editingTask.id)}`
-        : '/api/tasks';
+        ? `/tasks/${encodeURIComponent(this.editingTask.id)}`
+        : '/tasks';
       const method = isEditing ? 'PATCH' : 'POST';
 
-      const res = await fetch(url, {
+      const res = await api(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -502,7 +503,7 @@ class SynkerTasks extends LitElement {
     this.togglingIds = newSet;
 
     try {
-      const res = await fetch(`/api/tasks/${task.id}/toggle`, {
+      const res = await api(`/tasks/${task.id}/toggle`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

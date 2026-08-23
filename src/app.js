@@ -1,9 +1,12 @@
 import { LitElement, html, css } from 'lit';
+import { api } from './api.js';
 import './components/synker-login.js';
 import './components/synker-calendar.js';
 import './components/synker-tasks.js';
 import './components/synker-nav.js';
 import './components/synker-header.js';
+
+const DEMO = import.meta.env.VITE_DEMO === 'true';
 
 class SynkerApp extends LitElement {
   static properties = {
@@ -103,13 +106,14 @@ class SynkerApp extends LitElement {
 
   constructor() {
     super();
+    this.demo = DEMO;
     this.authenticated = false;
     this.currentView = 'calendar';
     this.syncing = false;
     this.lastSync = null;
-    this.online = navigator.onLine;
-    this._onOnline = () => { this.online = true; };
-    this._onOffline = () => { this.online = false; };
+    this.online = DEMO ? false : navigator.onLine;
+    this._onOnline = () => { if (!this.demo) this.online = true; };
+    this._onOffline = () => { if (!this.demo) this.online = false; };
     window.addEventListener('online', this._onOnline);
     window.addEventListener('offline', this._onOffline);
     this._checkAuth();
@@ -123,18 +127,17 @@ class SynkerApp extends LitElement {
   }
 
   async _registerSW() {
-    if ('serviceWorker' in navigator) {
-      try {
-        await navigator.serviceWorker.register('/sw.js');
-      } catch (err) {
-        console.warn('SW registration failed:', err);
-      }
+    if (this.demo || !('serviceWorker' in navigator)) return;
+    try {
+      await navigator.serviceWorker.register('sw.js');
+    } catch (err) {
+      console.warn('SW registration failed:', err);
     }
   }
 
   async _checkAuth() {
     try {
-      const res = await fetch('/api/status');
+      const res = await api('/status');
       const data = await res.json();
       this.authenticated = data.authenticated;
       this.lastSync = data.lastSync;
@@ -146,7 +149,7 @@ class SynkerApp extends LitElement {
   async _handleSync() {
     this.syncing = true;
     try {
-      const res = await fetch('/api/sync', { method: 'POST' });
+      const res = await api('/sync', { method: 'POST' });
       const data = await res.json();
       this.lastSync = data.lastSync;
       // Trigger re-render of child components
@@ -185,7 +188,9 @@ class SynkerApp extends LitElement {
         <div class="bubble"></div>
       </div>
       <div class="main-content">
-        ${this.online ? '' : html`<div class="offline-banner">🔌 Read-only — offline</div>`}
+        ${this.demo
+          ? html`<div class="offline-banner">🧪 Demo — mock data, read-only</div>`
+          : (this.online ? '' : html`<div class="offline-banner">🔌 Read-only — offline</div>`)}
         <synker-header
           .syncing=${this.syncing}
           .lastSync=${this.lastSync}

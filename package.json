@@ -9,6 +9,7 @@
     "dev:client": "vite",
     "dev:mock": "node server/mock.js",
     "build": "vite build",
+    "build:demo": "vite build --base /synker/ --mode demo",
     "start": "node server/index.js",
     "preview": "vite preview"
   },

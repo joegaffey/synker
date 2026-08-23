@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit';
+import { api } from '../api.js';
 
 class SynkerCalendar extends LitElement {
   static properties = {
@@ -513,7 +514,7 @@ class SynkerCalendar extends LitElement {
   async _fetchEvents() {
     this.loading = true;
     try {
-      const res = await fetch('/api/calendar/events');
+      const res = await api('/calendar/events');
       const data = await res.json();
       this.events = data.events || [];
       this._allEvents = data.events || [];
@@ -653,7 +654,7 @@ class SynkerCalendar extends LitElement {
     }
     this.loading = true;
     try {
-      const res = await fetch(`/api/calendar/events/month/${this.viewYear}/${this.viewMonth}`);
+      const res = await api(`/calendar/events/month/${this.viewYear}/${this.viewMonth}`);
       const data = await res.json();
       this.events = data.events || [];
     } catch (err) {
@@ -731,11 +732,11 @@ class SynkerCalendar extends LitElement {
 
       const isEditing = !!this.editingEvent;
       const url = isEditing
-        ? `/api/calendar/events/${encodeURIComponent(this.editingEvent.id)}`
-        : '/api/calendar/events';
+        ? `/calendar/events/${encodeURIComponent(this.editingEvent.id)}`
+        : '/calendar/events';
       const method = isEditing ? 'PATCH' : 'POST';
 
-      const res = await fetch(url, {
+      const res = await api(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -759,7 +760,7 @@ class SynkerCalendar extends LitElement {
   async _handleDelete(event) {
     this.deletingId = event.id;
     try {
-      const res = await fetch(`/api/calendar/events/${encodeURIComponent(event.id)}`, {
+      const res = await api(`/calendar/events/${encodeURIComponent(event.id)}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ calendarId: event.calendarId }),
