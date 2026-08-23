@@ -18,7 +18,7 @@ A cheerful family calendar and task list PWA that syncs with Google Calendar and
 1. Create a Google Cloud project at https://console.cloud.google.com
 2. Enable the **Google Calendar API** and **Google Tasks API**
 3. Create OAuth 2.0 credentials (Web application type)
-4. Set the authorized redirect URI to `http://your-host:3001/api/auth/callback`
+4. Set the authorized redirect URI to match your `GOOGLE_REDIRECT_URI` — for the SSH-tunnel setup below that's `https://localhost:3001/api/auth/callback`, or a public domain you own (e.g. `https://synker.example.com:3001/api/auth/callback`). Google requires `localhost` or a real registered domain — LAN IPs are rejected.
 
 ### Development
 
@@ -52,7 +52,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-The app will be available at http://your-host:3001
+The app will be available at http://your-host:3001 (or https://your-host:3001 when `HTTPS_KEY`/`HTTPS_CERT` are configured).
 
 > **Note:** Google tokens are kept in memory only. Restarting the server or container clears authentication — click **Connect Google** once after each restart to re-authenticate.
 
@@ -87,7 +87,7 @@ Then open **https://localhost:3001** and authenticate. (Your browser will show a
 | `HTTPS_KEY` | Path to TLS private key (mkcert) to serve HTTPS; empty = HTTP | *(empty)* |
 | `HTTPS_CERT` | Path to TLS certificate (mkcert) to serve HTTPS; empty = HTTP | *(empty)* |
 
-> **HTTPS required for battery indicator, offline mode, and OAuth from the kiosk.** The Battery Status API and service workers only work over HTTPS (or `localhost`), and Google refuses plain-HTTP OAuth redirect URIs. Generate certs with [mkcert](https://github.com/FiloSottile/mkcert) (`mkcert your-lan-ip synker.local`), set `HTTPS_KEY`/`HTTPS_CERT`, and trust mkcert's root CA once on each device.
+> **HTTPS required for battery indicator, offline mode, and OAuth from the kiosk.** The Battery Status API and service workers only work over HTTPS (or `localhost`), and Google only accepts plain-HTTP OAuth redirect URIs on `localhost` (never on a LAN IP). Generate certs with [mkcert](https://github.com/FiloSottile/mkcert) (`mkcert your-lan-ip your-domain`), set `HTTPS_KEY`/`HTTPS_CERT`, and trust mkcert's root CA once on each device.
 
 ## Architecture
 
