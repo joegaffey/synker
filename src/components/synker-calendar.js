@@ -511,8 +511,8 @@ class SynkerCalendar extends LitElement {
     this._fetchEvents();
   }
 
-  async _fetchEvents() {
-    this.loading = true;
+  async _fetchEvents(silent = false) {
+    if (!silent) this.loading = true;
     try {
       const res = await api('/calendar/events');
       const data = await res.json();
@@ -532,12 +532,12 @@ class SynkerCalendar extends LitElement {
     } catch (err) {
       console.error('Failed to fetch events:', err);
     } finally {
-      this.loading = false;
+      if (!silent) this.loading = false;
     }
   }
 
   refresh() {
-    this._fetchEvents();
+    this._fetchEvents(true);
   }
 
   _getMonthDates() {

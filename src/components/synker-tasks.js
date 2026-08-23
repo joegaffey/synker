@@ -391,8 +391,8 @@ class SynkerTasks extends LitElement {
     this._fetchData();
   }
 
-  async _fetchData() {
-    this.loading = true;
+  async _fetchData(silent = false) {
+    if (!silent) this.loading = true;
     try {
       const [listsRes, tasksRes] = await Promise.all([
         api('/tasks/lists'),
@@ -408,12 +408,12 @@ class SynkerTasks extends LitElement {
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
     } finally {
-      this.loading = false;
+      if (!silent) this.loading = false;
     }
   }
 
   refresh() {
-    this._fetchData();
+    this._fetchData(true);
   }
 
   _getFilteredTasks() {
