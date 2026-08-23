@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
+import https from 'https';
 import { fileURLToPath } from 'url';
 import cron from 'node-cron';
 import { authRouter } from './routes/auth.js';
@@ -61,7 +63,28 @@ cron.schedule(`*/${interval} * * * *`, async () => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Synker server running on port ${PORT}`);
+const httpsKeyPath = process.env.HTTPS_KEY;
+const httpsCertPath = process.env.HTTPS_CERT;
+
+let server;
+if (httpsKeyPath && httpsCertPath) {
+  try {
+    server = https.createServer({
+      key: fs.readFileSync(httpsKeyPath),
+      cert: fs.readFileSync(httpsCertPath),
+    }, app);
+  } catch (err) {
+    console.error(`[HTTPS] Failed to read certs (${httpsKeyPath}, ${httpsCertPath}):`, err.message);
+    console.error('[HTTPS] Falling back to plain HTTP.');
+    server = app;
+  }
+} else {
+  server = app;
+}
+
+const scheme = server === app ? 'http' : 'https';
+
+server.listen(PORT, () => {
+  console.log(`🚀 Synker server running on ${scheme}://0.0.0.0:${PORT}`);
   console.log(`📅 Sync interval: every ${interval} minutes`);
 });

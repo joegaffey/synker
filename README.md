@@ -58,13 +58,13 @@ The app will be available at http://your-host:3001
 
 ### Accessing from another device (SSH tunnel)
 
-If you browse to the app from another machine but keep the OAuth redirect URI set to `http://localhost:3001`, open an SSH tunnel so `localhost:3001` on your machine reaches the server:
+If you browse to the app from another machine but keep the OAuth redirect URI set to `https://localhost:3001`, open an SSH tunnel so `localhost:3001` on your machine reaches the server:
 
 ```bash
 ssh -L 3001:localhost:3001 user@your-host
 ```
 
-Then open http://localhost:3001 and authenticate. (Any browser on the tunneled machine will work; the kiosk device that displays the app still needs to reach the server over the LAN.)
+Then open **https://localhost:3001** and authenticate. (Your browser will show a cert warning unless you install mkcert's root CA on that machine; the kiosk device that displays the app still reaches the server directly at **https://your-lan-ip:3001**.)
 
 ### CasaOS
 
@@ -84,6 +84,10 @@ Then open http://localhost:3001 and authenticate. (Any browser on the tunneled m
 | `CALENDAR_IDS` | Comma-separated calendar IDs | `primary` |
 | `TASK_LIST_IDS` | Comma-separated Google Task list IDs to sync (empty = all) | *(all)* |
 | `PORT` | Server port | `3001` |
+| `HTTPS_KEY` | Path to TLS private key (mkcert) to serve HTTPS; empty = HTTP | *(empty)* |
+| `HTTPS_CERT` | Path to TLS certificate (mkcert) to serve HTTPS; empty = HTTP | *(empty)* |
+
+> **HTTPS required for battery indicator, offline mode, and OAuth from the kiosk.** The Battery Status API and service workers only work over HTTPS (or `localhost`), and Google refuses plain-HTTP OAuth redirect URIs. Generate certs with [mkcert](https://github.com/FiloSottile/mkcert) (`mkcert your-lan-ip synker.local`), set `HTTPS_KEY`/`HTTPS_CERT`, and trust mkcert's root CA once on each device.
 
 ## Architecture
 
