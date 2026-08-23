@@ -11,6 +11,7 @@ class SynkerApp extends LitElement {
     currentView: { type: String },
     syncing: { type: Boolean },
     lastSync: { type: String },
+    online: { type: Boolean },
   };
 
   static styles = css`
@@ -87,6 +88,17 @@ class SynkerApp extends LitElement {
       flex-direction: column;
       height: 100%;
     }
+
+    .offline-banner {
+      background: linear-gradient(135deg, #ffd93d 0%, #ffb347 100%);
+      color: #4a3f6b;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      padding: 6px 12px;
+      z-index: 2;
+    }
   `;
 
   constructor() {
@@ -95,8 +107,19 @@ class SynkerApp extends LitElement {
     this.currentView = 'calendar';
     this.syncing = false;
     this.lastSync = null;
+    this.online = navigator.onLine;
+    this._onOnline = () => { this.online = true; };
+    this._onOffline = () => { this.online = false; };
+    window.addEventListener('online', this._onOnline);
+    window.addEventListener('offline', this._onOffline);
     this._checkAuth();
     this._registerSW();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback?.();
+    window.removeEventListener('online', this._onOnline);
+    window.removeEventListener('offline', this._onOffline);
   }
 
   async _registerSW() {
@@ -162,15 +185,17 @@ class SynkerApp extends LitElement {
         <div class="bubble"></div>
       </div>
       <div class="main-content">
+        ${this.online ? '' : html`<div class="offline-banner">🔌 Read-only — offline</div>`}
         <synker-header
           .syncing=${this.syncing}
           .lastSync=${this.lastSync}
+          .online=${this.online}
           @sync-requested=${this._handleSync}
         ></synker-header>
         <div class="content">
           ${this.currentView === 'calendar'
-            ? html`<synker-calendar></synker-calendar>`
-            : html`<synker-tasks></synker-tasks>`}
+            ? html`<synker-calendar .online=${this.online}></synker-calendar>`
+            : html`<synker-tasks .online=${this.online}></synker-tasks>`}
         </div>
         <synker-nav
           .currentView=${this.currentView}

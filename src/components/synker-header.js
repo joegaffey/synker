@@ -4,6 +4,7 @@ class SynkerHeader extends LitElement {
   static properties = {
     syncing: { type: Boolean },
     lastSync: { type: String },
+    online: { type: Boolean },
   };
 
   static styles = css`
@@ -111,7 +112,7 @@ class SynkerHeader extends LitElement {
           <button
             class="sync-btn ${this.syncing ? 'syncing' : ''}"
             @click=${this._handleSync}
-            ?disabled=${this.syncing}
+            ?disabled=${this.syncing || !this.online}
             aria-label="Sync with Google"
           >
             <span class="sync-icon">🔄</span>

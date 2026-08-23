@@ -14,6 +14,7 @@ class SynkerTasks extends LitElement {
     creating: { type: Boolean },
     editingTask: { type: Object },
     togglingIds: { type: Object },
+    online: { type: Boolean },
   };
 
   static styles = css`
@@ -601,12 +602,11 @@ class SynkerTasks extends LitElement {
               : (this.editingTask ? 'Save Changes 💾' : 'Add Task ✨')}</button>
           </div>
         </form>
-      ` : html`
+      ` : (this.online ? html`
         <button class="add-btn" @click=${() => { this.showCreateForm = true; }}>
           <span>➕</span> New Task
         </button>
-      `}
-
+      ` : '')}
       ${pendingTasks.length === 0 && !this.showCompleted ? html`
         <div class="empty-state">
           <div class="empty-icon">🎉</div>
@@ -652,8 +652,8 @@ class SynkerTasks extends LitElement {
           aria-checked=${completed}
           aria-label="Mark ${task.title} as ${completed ? 'incomplete' : 'complete'}"
           tabindex="0"
-          @click=${() => this._handleToggle(task)}
-          @keydown=${(e) => { if (e.key === 'Enter' || e.key === ' ') this._handleToggle(task); }}
+          @click=${this.online ? () => this._handleToggle(task) : undefined}
+          @keydown=${this.online ? (e) => { if (e.key === 'Enter' || e.key === ' ') this._handleToggle(task); } : undefined}
         ></div>
         <div class="task-content">
           <div class="task-title">${task.title}</div>
@@ -662,11 +662,13 @@ class SynkerTasks extends LitElement {
           </div>
           ${task.notes ? html`<div class="task-notes">${task.notes}</div>` : ''}
         </div>
-        <button
-          class="task-edit-btn"
-          @click=${() => this._startEdit(task)}
-          aria-label="Edit task ${task.title}"
-        >✏️</button>
+        ${this.online ? html`
+          <button
+            class="task-edit-btn"
+            @click=${() => this._startEdit(task)}
+            aria-label="Edit task ${task.title}"
+          >✏️</button>
+        ` : ''}
       </div>
     `;
   }

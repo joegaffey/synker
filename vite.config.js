@@ -16,7 +16,7 @@ export default defineConfig({
         const swPath = resolve('dist', 'sw.js');
         const content = readFileSync(swPath, 'utf-8');
         const hash = Date.now().toString(36);
-        writeFileSync(swPath, content.replace('__BUILD_HASH__', hash));
+        writeFileSync(swPath, content.replaceAll('__BUILD_HASH__', hash));
       },
     },
   ],

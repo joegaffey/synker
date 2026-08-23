@@ -20,6 +20,7 @@ class SynkerCalendar extends LitElement {
     confirmDeleteId: { type: String },
     editingEvent: { type: Object },
     calendars: { type: Array },
+    online: { type: Boolean },
   };
 
   static styles = css`
@@ -505,6 +506,7 @@ class SynkerCalendar extends LitElement {
     this.confirmDeleteId = null;
     this.editingEvent = null;
     this.calendars = [];
+    this._allEvents = [];
     this._fetchEvents();
   }
 
@@ -514,6 +516,7 @@ class SynkerCalendar extends LitElement {
       const res = await fetch('/api/calendar/events');
       const data = await res.json();
       this.events = data.events || [];
+      this._allEvents = data.events || [];
       // Extract unique calendars
       const calSet = new Map();
       for (const event of this.events) {
@@ -655,9 +658,19 @@ class SynkerCalendar extends LitElement {
       this.events = data.events || [];
     } catch (err) {
       console.error('Failed to fetch month events:', err);
+      this.events = this._filterEventsByMonth(this._allEvents, this.viewYear, this.viewMonth);
     } finally {
       this.loading = false;
     }
+  }
+
+  _filterEventsByMonth(events, year, month) {
+    return (events || []).filter(event => {
+      const date = this._getLocalDate(event.start);
+      if (!date) return false;
+      const [y, m] = date.split('-').map(Number);
+      return y === year && m === month + 1;
+    });
   }
 
   _calendarLabel(id) {
@@ -800,11 +813,11 @@ class SynkerCalendar extends LitElement {
         `)}
       </div>
 
-      ${this.showCreateForm ? this._renderCreateForm() : html`
+      ${this.showCreateForm ? this._renderCreateForm() : (this.online ? html`
         <button class="add-btn" @click=${() => { this.showCreateForm = true; }}>
           <span>📅</span> New Event
         </button>
-      `}
+      ` : '')}
 
       ${this.loading ? html`
         <div class="loading">
@@ -952,16 +965,18 @@ class SynkerCalendar extends LitElement {
           ${dateLabel ? html`<div class="event-date-label">📅 ${dateLabel}</div>` : ''}
         </div>
         <div class="event-actions">
-          <button
-            class="event-action-btn edit"
-            @click=${() => this._startEdit(event)}
-            aria-label="Edit event ${event.title}"
-          >✏️</button>
-          <button
-            class="event-action-btn delete"
-            @click=${() => { this.confirmDeleteId = event.id; }}
-            aria-label="Delete event ${event.title}"
-          >🗑️</button>
+          ${this.online ? html`
+            <button
+              class="event-action-btn edit"
+              @click=${() => this._startEdit(event)}
+              aria-label="Edit event ${event.title}"
+            >✏️</button>
+            <button
+              class="event-action-btn delete"
+              @click=${() => { this.confirmDeleteId = event.id; }}
+              aria-label="Delete event ${event.title}"
+            >🗑️</button>
+          ` : ''}
         </div>
 
         ${isConfirming ? html`
