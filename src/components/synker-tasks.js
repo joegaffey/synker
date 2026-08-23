@@ -378,7 +378,7 @@ class SynkerTasks extends LitElement {
     this.tasks = [];
     this.taskLists = [];
     this.loading = true;
-    this.selectedList = 'all';
+    this.selectedList = null;
     this.showCompleted = false;
     this.showCreateForm = false;
     this.newTaskTitle = '';
@@ -401,6 +401,9 @@ class SynkerTasks extends LitElement {
       const tasksData = await tasksRes.json();
       this.taskLists = listsData.lists || [];
       this.tasks = tasksData.tasks || [];
+      if (!this.selectedList && this.taskLists.length > 0) {
+        this.selectedList = this.taskLists[0].id;
+      }
     } catch (err) {
       console.error('Failed to fetch tasks:', err);
     } finally {
@@ -413,11 +416,8 @@ class SynkerTasks extends LitElement {
   }
 
   _getFilteredTasks() {
-    let filtered = this.tasks;
-    if (this.selectedList !== 'all') {
-      filtered = filtered.filter(t => t.listId === this.selectedList);
-    }
-    return filtered;
+    if (!this.selectedList) return [];
+    return this.tasks.filter(t => t.listId === this.selectedList);
   }
 
   _formatDue(dueStr) {
@@ -460,9 +460,7 @@ class SynkerTasks extends LitElement {
     try {
       const listId = this.editingTask
         ? this.editingTask.listId
-        : (this.selectedList !== 'all'
-          ? this.selectedList
-          : (this.taskLists[0]?.id || '@default'));
+        : this.selectedList;
 
       const body = {
         title: this.newTaskTitle.trim(),
@@ -540,12 +538,6 @@ class SynkerTasks extends LitElement {
 
     return html`
       <div class="list-tabs" role="tablist" aria-label="Task lists">
-        <button
-          class="list-tab ${this.selectedList === 'all' ? 'active' : ''}"
-          @click=${() => { this.selectedList = 'all'; }}
-          role="tab"
-          aria-selected=${this.selectedList === 'all'}
-        >All</button>
         ${this.taskLists.map(list => html`
           <button
             class="list-tab ${this.selectedList === list.id ? 'active' : ''}"

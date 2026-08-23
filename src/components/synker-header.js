@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit';
+import './synker-battery.js';
 
 class SynkerHeader extends LitElement {
   static properties = {
@@ -35,6 +36,13 @@ class SynkerHeader extends LitElement {
       font-size: 28px;
       font-weight: 700;
       color: #4a3f6b;
+    }
+
+    .sync-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
     }
 
     .sync-btn {
@@ -109,15 +117,18 @@ class SynkerHeader extends LitElement {
           <h1>Synker</h1>
         </div>
         <div>
-          <button
-            class="sync-btn ${this.syncing ? 'syncing' : ''}"
-            @click=${this._handleSync}
-            ?disabled=${this.syncing || !this.online}
-            aria-label="Sync with Google"
-          >
-            <span class="sync-icon">🔄</span>
-            ${this.syncing ? 'Syncing...' : 'Sync'}
-          </button>
+          <div class="sync-row">
+            <synker-battery></synker-battery>
+            <button
+              class="sync-btn ${this.syncing ? 'syncing' : ''}"
+              @click=${this._handleSync}
+              ?disabled=${this.syncing || !this.online}
+              aria-label="Sync with Google"
+            >
+              <span class="sync-icon">🔄</span>
+              ${this.syncing ? 'Syncing...' : 'Sync'}
+            </button>
+          </div>
           <div class="last-sync">${this._formatLastSync()}</div>
         </div>
       </div>

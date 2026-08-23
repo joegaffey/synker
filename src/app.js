@@ -4,7 +4,6 @@ import './components/synker-calendar.js';
 import './components/synker-tasks.js';
 import './components/synker-nav.js';
 import './components/synker-header.js';
-import './components/synker-battery.js';
 
 class SynkerApp extends LitElement {
   static properties = {
@@ -175,7 +174,6 @@ class SynkerApp extends LitElement {
           <div class="bubble"></div>
         </div>
         <synker-login></synker-login>
-        <synker-battery></synker-battery>
       `;
     }
 
@@ -204,7 +202,6 @@ class SynkerApp extends LitElement {
           @view-changed=${this._handleNavChange}
         ></synker-nav>
       </div>
-      <synker-battery></synker-battery>
     `;
   }
 }

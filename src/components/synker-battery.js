@@ -9,21 +9,17 @@ class SynkerBattery extends LitElement {
 
   static styles = css`
     :host {
-      position: fixed;
-      bottom: 92px;
-      right: 12px;
-      z-index: 90;
+      display: inline-block;
     }
 
     .chip {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 12px;
+      gap: 5px;
+      padding: 7px 11px;
       border-radius: 20px;
-      background: rgba(255, 255, 255, 0.85);
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(4px);
+      background: white;
+      box-shadow: 0 2px 12px rgba(108, 99, 255, 0.15);
       font-family: 'Fredoka', sans-serif;
       font-size: 13px;
       font-weight: 600;
