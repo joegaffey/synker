@@ -112,10 +112,13 @@ class SynkerApp extends LitElement {
     this.syncing = false;
     this.lastSync = null;
     this.online = DEMO ? false : navigator.onLine;
-    this._onOnline = () => { if (!this.demo) this.online = true; };
+    this._onOnline = () => this._recoverOnline();
     this._onOffline = () => { if (!this.demo) this.online = false; };
     window.addEventListener('online', this._onOnline);
     window.addEventListener('offline', this._onOffline);
+    if (!DEMO) {
+      this._onlineTimer = setInterval(() => this._autoRefresh(), 30000);
+    }
     this._checkAuth();
     this._registerSW();
   }
@@ -124,6 +127,52 @@ class SynkerApp extends LitElement {
     super.disconnectedCallback?.();
     window.removeEventListener('online', this._onOnline);
     window.removeEventListener('offline', this._onOffline);
+    if (this._onlineTimer) clearInterval(this._onlineTimer);
+  }
+
+  // Periodic kiosk poll: keeps the displayed data fresh and doubles as a
+  // connectivity check. Offline data requests are served from the service
+  // worker cache, so they can't reveal real connectivity — when we believe
+  // we're offline, probe the network with a cache-busted request to recover
+  // from the Chromium wake-from-sleep quirk where 'online' never fires.
+  async _autoRefresh() {
+    if (this.demo) return;
+    this.shadowRoot.querySelector('synker-calendar')?.refresh?.();
+    this.shadowRoot.querySelector('synker-tasks')?.refresh?.();
+    if (!this.online) {
+      await this._probeConnection();
+    }
+  }
+
+  async _probeConnection() {
+    if (this.demo || this.online) return;
+    let res;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      res = await api(`/status?_=${Date.now()}`, { signal: controller.signal });
+      clearTimeout(timer);
+    } catch (err) {
+      return;
+    }
+    if (!res.ok) return;
+    let data;
+    try {
+      data = await res.json();
+    } catch (err) {
+      return;
+    }
+    this.lastSync = data.lastSync;
+    if (data.authenticated !== this.authenticated) this.authenticated = data.authenticated;
+    this._recoverOnline();
+  }
+
+  _recoverOnline() {
+    if (this.demo || this.online) return;
+    this.online = true;
+    this.requestUpdate();
+    this.shadowRoot.querySelector('synker-calendar')?.refresh?.();
+    this.shadowRoot.querySelector('synker-tasks')?.refresh?.();
   }
 
   async _registerSW() {

@@ -6,7 +6,7 @@ A cheerful family calendar and task list PWA that syncs with Google Calendar and
 
 - 📆 **Google Calendar** sync — view, create, edit, and delete events in a beautiful card layout
 - ✅ **Google Tasks** sync — browse, add, edit, and complete tasks across your task lists
-- 🔄 **Auto-sync** — configurable periodic refresh (default: every 5 minutes)
+- 🔄 **Auto-sync** — configurable periodic refresh (default: every 5 minutes); the kiosk display auto-refreshes every 30s and auto-recovers if it goes offline (e.g. waking from sleep)
 - 👆 **Touch-first UX** — large touch targets, smooth animations, kiosk-friendly
 - 📱 **PWA** — installable, works offline with cached data
 - 🐳 **Docker** — one-command deploy on CasaOS or any Docker host
