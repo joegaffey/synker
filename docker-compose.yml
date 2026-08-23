@@ -1,3 +1,5 @@
+name: synker
+
 services:
   synker:
     build: .
@@ -17,9 +19,33 @@ services:
       - HTTPS_CERT=${HTTPS_CERT:-}
     volumes:
       - ./certs:/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://127.0.0.1:3001/api/status >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     labels:
-      icon: https://raw.githubusercontent.com/IceWhaleTech/CasaOS-AppStore/main/Apps/Synker/icon.png
-      web: http://[ip]:[port:3001]
+      icon: https://raw.githubusercontent.com/joegaffey/synker/main/public/icons/icon-192.svg
+      web: https://[ip]:[port:3001]
       name: "Synker"
       description: "Family calendar and task hub synced with Google"
       category: "Productivity"
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: synker
+  title:
+    en_us: Synker
+  description:
+    en_us: Family calendar and task hub synced with Google Calendar & Tasks
+  tagline:
+    en_us: Family calendar & tasks
+  icon: https://raw.githubusercontent.com/joegaffey/synker/main/public/icons/icon-192.svg
+  category: Productivity
+  port_map: "3001"
+  scheme: https
+  index: /
+
