@@ -116,6 +116,7 @@ class SynkerApp extends LitElement {
     this._onOffline = () => { if (!this.demo) this.online = false; };
     window.addEventListener('online', this._onOnline);
     window.addEventListener('offline', this._onOffline);
+    document.addEventListener('visibilitychange', this._onVisibility);
     if (!DEMO) {
       this._onlineTimer = setInterval(() => this._autoRefresh(), 30000);
     }
@@ -127,8 +128,14 @@ class SynkerApp extends LitElement {
     super.disconnectedCallback?.();
     window.removeEventListener('online', this._onOnline);
     window.removeEventListener('offline', this._onOffline);
+    document.removeEventListener('visibilitychange', this._onVisibility);
     if (this._onlineTimer) clearInterval(this._onlineTimer);
   }
+
+  // Wake-from-sleep fast path: when the page becomes visible again (kiosk
+  // waking), immediately refresh data and recover connectivity instead of
+  // waiting for the next poll tick.
+  _onVisibility = () => { if (!document.hidden) this._autoRefresh(); };
 
   // Periodic kiosk poll: keeps the displayed data fresh and doubles as a
   // connectivity check. Offline data requests are served from the service
