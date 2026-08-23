@@ -11,6 +11,8 @@ A cheerful family calendar and task list PWA that syncs with Google Calendar and
 - 📱 **PWA** — installable, works offline with cached data
 - 🐳 **Docker** — one-command deploy on CasaOS or any Docker host
 
+> 👀 **Try the live demo** (mock data, no login needed): https://joegaffey.com/synker/
+
 ## Quick Start
 
 ### Prerequisites
@@ -42,6 +44,16 @@ npm run dev:client      # in another terminal, vite on :3000 proxies /api to it
 ```
 
 Or build and run it fully standalone: `npm run build && npm run dev:mock` → http://localhost:3001
+
+### Live demo (GitHub Pages)
+
+A read-only demo with the same mock data is auto-deployed to GitHub Pages on every push to `main`:
+
+```bash
+npm run build:demo      # vite build --base /synker/ --mode demo
+```
+
+The demo runs the mock API entirely in the browser (`src/demo/`), so it needs no backend. A GitHub Actions workflow (`deploy-demo.yml`) builds and deploys it to `dist/`.
 
 ### Production (Docker)
 
