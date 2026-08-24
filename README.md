@@ -101,6 +101,27 @@ Then open **https://localhost:3001** and authenticate. (Your browser will show a
 
 > **HTTPS required for battery indicator, offline mode, and OAuth from the kiosk.** The Battery Status API and service workers only work over HTTPS (or `localhost`), and Google only accepts plain-HTTP OAuth redirect URIs on `localhost` (never on a LAN IP). Generate certs with [mkcert](https://github.com/FiloSottile/mkcert) (`mkcert your-lan-ip your-domain`), set `HTTPS_KEY`/`HTTPS_CERT`, and trust mkcert's root CA once on each device.
 
+## Securing the network
+
+Synker's API has **no built-in login** — any device that can reach port `3001` can view *and edit* your family's calendar and tasks through the server. It deliberately trusts the network it runs on, so on a home network the right way to keep neighbours, guests, and IoT devices out is to isolate the server and kiosk on their own network segment:
+
+1. **VLAN / trusted SSID (preferred).** Put the server and kiosk on their own VLAN or a dedicated trusted SSID, and keep everyone else on the guest network (most access points have a "guest network" / "client isolation" setting that stops guests from reaching your LAN at all).
+2. **If your router can't do VLANs**, the guest-network isolation feature is the equivalent lever — just verify guests really can't reach the trusted LAN.
+3. **Static DHCP reservations** for the kiosk and server so their addresses never change.
+4. **Keep internet access for the server.** Don't use Docker `internal: true` networks — the server must reach the internet for Google API sync. Isolation is done with ACLs at the router or host firewall, not by cutting the server off.
+5. **Host firewall (recommended).** Docker publishes `3001:3001` on all interfaces, so on the server host allow only the kiosk IP(s) through, e.g. with UFW:
+
+   ```bash
+   sudo ufw allow from 192.168.1.50 to any port 3001 proto tcp   # kiosk
+   sudo ufw deny 3001/tcp                                        # everyone else
+   ```
+
+   (Replace `192.168.1.50` with your kiosk's reserved address.)
+
+6. **HTTPS still matters.** Network isolation keeps strangers off, but calendar and task data still travels in plaintext between the kiosk and the server over HTTP — see the HTTPS note in Configuration above for serving over TLS with mkcert.
+
+> **Why no login?** Synker is a single-user family appliance: it has no accounts, passwords, or sessions — anyone who can reach it is treated as family. If you can't isolate the network (e.g. a flat subnet you don't control), put a reverse proxy with basic auth in front of it instead.
+
 ## Architecture
 
 ```
