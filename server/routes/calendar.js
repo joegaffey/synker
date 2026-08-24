@@ -104,7 +104,7 @@ calendarRouter.post('/events', async (req, res) => {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
-  const { title, description, start, end, allDay, calendarId, location } = req.body;
+  const { title, description, start, end, allDay, calendarId, location, timeZone } = req.body;
   if (!title || !start) {
     return res.status(400).json({ error: 'Title and start are required' });
   }
@@ -114,6 +114,7 @@ calendarRouter.post('/events', async (req, res) => {
     const calendar = google.calendar({ version: 'v3', auth });
 
     const targetCalendar = calendarId || (process.env.CALENDAR_IDS || 'primary').split(',')[0].trim();
+    const tz = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     let event;
     if (allDay) {
@@ -129,8 +130,8 @@ calendarRouter.post('/events', async (req, res) => {
         summary: title,
         description: description || undefined,
         location: location || undefined,
-        start: { dateTime: start, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-        end: { dateTime: end || new Date(new Date(start).getTime() + 3600000).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        start: { dateTime: start, timeZone: tz },
+        end: { dateTime: end || new Date(new Date(start).getTime() + 3600000).toISOString(), timeZone: tz },
       };
     }
 
@@ -156,7 +157,7 @@ calendarRouter.patch('/events/:eventId', async (req, res) => {
   }
 
   const { eventId } = req.params;
-  const { title, description, start, end, allDay, calendarId, location } = req.body;
+  const { title, description, start, end, allDay, calendarId, location, timeZone } = req.body;
 
   if (!calendarId) {
     return res.status(400).json({ error: 'calendarId is required' });
@@ -172,12 +173,13 @@ calendarRouter.patch('/events/:eventId', async (req, res) => {
     if (location !== undefined) event.location = location || undefined;
 
     if (start) {
+      const tz = timeZone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       if (allDay) {
         event.start = { date: start };
         event.end = { date: end || start };
       } else {
-        event.start = { dateTime: start, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone };
-        event.end = { dateTime: end || new Date(new Date(start).getTime() + 3600000).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone };
+        event.start = { dateTime: start, timeZone: tz };
+        event.end = { dateTime: end || new Date(new Date(start).getTime() + 3600000).toISOString(), timeZone: tz };
       }
     }
 

@@ -716,6 +716,7 @@ class SynkerCalendar extends LitElement {
         title: this.newEventTitle.trim(),
         calendarId: this.newEventCalendar,
         allDay: this.newEventAllDay,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       };
 
       if (this.newEventLocation.trim()) {
