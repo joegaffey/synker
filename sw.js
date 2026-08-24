@@ -1,5 +1,5 @@
-const CACHE_NAME = `synker-${'mt7mfq7a'}`;
-const API_CACHE = `synker-api-${'mt7mfq7a'}`;
+const CACHE_NAME = `synker-${'mt7n4y5r'}`;
+const API_CACHE = `synker-api-${'mt7n4y5r'}`;
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
